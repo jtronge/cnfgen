@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cnfgen"
+version = "0.0.1"
+authors = [
+    {name = "Maxim Zhulin", email = "mzhulin3@gatech.edu"},
+    {name = "Jake Tronge", email = "jtronge3@gatech.edu"},
+]
+dependencies = [
+    "requests",
+    'importlib-metadata; python_version<"3.10"',
+]
+license = "MIT"

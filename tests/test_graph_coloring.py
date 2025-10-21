@@ -6,11 +6,11 @@ def test_graph_coloring():
     nnodes = 4
 
     cnf = cnfgen.ConstraintCompiler()
-    nodes = cnf.create_vars(nnodes, cnfgen.ENUM, values = colors)
+    nodes = cnf.create_vars(nnodes, cnfgen.VarType.ENUM, values = colors)
 
     for edge in graph:
         vars = [nodes[edge[0]], nodes[edge[1]]]
-        cnf.add_constraint(vars, cnfgen.DIFFERENT)
+        cnf.add_constraint(vars, cnfgen.ConstraintType.DIFFERENT)
 
     cnf.output("test_graph_coloring.cnf")
     result = cnf.solve()

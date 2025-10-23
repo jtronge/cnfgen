@@ -1,8 +1,11 @@
 
 
 class VarType:
-    ENUM = 0
+    BOOL = 0
+    ENUM = 1
 
 
 class ConstraintType:
     DIFFERENT = 0
+    OR = 1
+    ATMOST = 2

@@ -12,7 +12,6 @@ class Formula:
         self.num_vars += 1
         return self.num_vars
     def add_clause(self, clause):
-        print(clause)
         self.solver.add_clause(clause)
     def solve(self):
         return self.solver.solve()
@@ -27,7 +26,7 @@ class Bool:
     def eval(self, formula):
         if formula.model is None:
             raise VarEvalError("formula is unknown or unsatisfiable")
-        return formula.model[self.vars_[0]]
+        return formula.model[self.vars_[0] - 1]
 
 class Enum:
     def __init__(self, formula, values):
@@ -40,14 +39,16 @@ class Enum:
         clauses = set()
         for var_i in self.vars_:
             for var_j in self.vars_:
-                if var_i == var_j or (var_i, var_j) in clauses or (var_j, var_i) in clauses:
+                # TODO: Remove redundant clauses
+                if var_i == var_j:
                     continue
                 clauses.add((var_i, var_j))
                 formula.add_clause([-var_i, -var_j])
     def eval(self, formula):
         assert formula.model is not None
+        print(self.vars_)
         for var, value in zip(self.vars_, self.values):
-            if formula.model[var] > 0:
+            if formula.model[var - 1] > 0:
                 return value
         return None
 

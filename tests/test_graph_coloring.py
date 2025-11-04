@@ -1,6 +1,6 @@
 import cnfgen
 
-def test_graph_coloring():
+def test_graph_coloring_unsatisfiable():
     colors = ["red", "green", "blue"]
     graph = [[0,1], [0,2], [0,3], [1,2], [1,3], [2,3]]
     nnodes = 4
@@ -31,7 +31,7 @@ def test_graph_coloring_satisfiable():
     cnf.output("test_graph_coloring.cnf")
     result = cnf.formula.solve()
 
-    for node in nodes:
-        print(node.eval(cnf.formula))
+    colors = set(node.eval(cnf.formula) for node in nodes)
+    assert len(colors) == nnodes
 
     assert result

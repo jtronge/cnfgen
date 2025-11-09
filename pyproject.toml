@@ -12,6 +12,8 @@ authors = [
 dependencies = [
     "requests",
     'importlib-metadata; python_version<"3.10"',
+    "python-sat == 1.8.dev24",
+    "scipy",
 ]
 license = "MIT"
 
@@ -19,5 +21,7 @@ license = "MIT"
 test = [
     "pytest >= 8",
     "ruff == 0.14.1",
-    "python-sat == 1.8.dev24",
 ]
+
+[tool.setuptools]
+packages = ["cnfgen"]

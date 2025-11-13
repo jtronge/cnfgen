@@ -96,6 +96,17 @@ class ConstraintCompiler:
                         for intl_var_a, intl_var_b in zip(var_i.vars_, var_j.vars_):
                             # not(A) OR not(B)
                             self.formula.add_clause([-intl_var_a, -intl_var_b])
+            case ConstraintType.OR:
+                # Assumes we have a binary type
+                clause = []
+                for var in vars_:
+                    clause.extend(var.vars_)
+                self.formula.add_clause(clause)
+            case ConstraintType.AND:
+                clause = []
+                for var in vars_:
+                    for intl_var in var.vars_:
+                        self.formula.add_clause([intl_var])
 
     def output(self, fname):
         # TODO

@@ -9,3 +9,4 @@ class ConstraintType:
     DIFFERENT = 0
     OR = 1
     ATMOST = 2
+    AND = 3

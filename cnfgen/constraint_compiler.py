@@ -103,10 +103,14 @@ class ConstraintCompiler:
                     clause.extend(var.vars_)
                 self.formula.add_clause(clause)
             case ConstraintType.AND:
-                clause = []
                 for var in vars_:
                     for intl_var in var.vars_:
                         self.formula.add_clause([intl_var])
+            case ConstraintType.NAND:
+                clause = []
+                for var in vars_:
+                    clause.extend(-v for v in var.vars_)
+                self.formula.add_clause(clause)
 
     def output(self, fname):
         # TODO

@@ -10,3 +10,4 @@ class ConstraintType:
     OR = 1
     ATMOST = 2
     AND = 3
+    NAND = 4

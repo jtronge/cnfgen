@@ -56,9 +56,10 @@ class ConstraintCompiler:
     """Base CNF compiler code."""
 
     def __init__(self):
-        #TODO
         self.formula = Formula()
         self.vars_ = []
+        # Auxilary vars used for constraints
+        self.aux_vars = []
 
     def create_vars(self, num, type_, values=None):
         match type_:
@@ -121,7 +122,3 @@ class ConstraintCompiler:
     def output(self, fname):
         # TODO
         pass
-
-    def solve(self):
-        """Run solver."""
-        self.solver.solve()

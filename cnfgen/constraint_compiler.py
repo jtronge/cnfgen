@@ -111,6 +111,12 @@ class ConstraintCompiler:
                 for var in vars_:
                     clause.extend(-v for v in var.vars_)
                 self.formula.add_clause(clause)
+            case ConstraintType.ATMOST:
+                assert k is not None
+                clause = []
+                for var in vars_:
+                    clause.extend(var.vars_)
+                self.formula.add_clause([var, k], is_atmost=True)
 
     def output(self, fname):
         # TODO

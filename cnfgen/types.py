@@ -1,3 +1,4 @@
+"""Variable types and constraint types for cnfgen."""
 
 
 class VarType:

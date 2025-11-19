@@ -19,7 +19,7 @@ def test_graph_coloring_unsatisfiable():
     setup_coloring_problem(cnf, nnodes, graph, colors)
 
     cnf.output("test_graph_coloring.cnf")
-    result = cnf.formula.solve()
+    result = cnf.solve()
     assert not result
 
 def test_graph_coloring_satisfiable():
@@ -31,9 +31,9 @@ def test_graph_coloring_satisfiable():
     nodes = setup_coloring_problem(cnf, nnodes, graph, colors)
 
     cnf.output("test_graph_coloring.cnf")
-    result = cnf.formula.solve()
+    result = cnf.solve()
 
-    colors = set(node.eval(cnf.formula) for node in nodes)
+    colors = set(cnf.eval(node) for node in nodes)
     assert len(colors) == nnodes
 
     assert result
@@ -74,5 +74,5 @@ def test_graph_coloring_file(root, ncolors, graph_path, exp_result):
     cnf = cnfgen.ConstraintCompiler()
     setup_coloring_problem(cnf, nnodes, graph, colors)
 
-    result = cnf.formula.solve()
+    result = cnf.solve()
     assert result == exp_result

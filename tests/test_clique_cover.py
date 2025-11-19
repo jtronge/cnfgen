@@ -25,4 +25,4 @@ def test_clique_cover_satisfiable():
         cnf.add_constraint([nodes[i], nodes[j]], ConstraintType.DIFFERENT)
 
     cnf.output("test_clique_cover.cnf")
-    assert cnf.formula.solve()
+    assert cnf.solve()

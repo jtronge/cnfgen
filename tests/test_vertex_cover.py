@@ -14,7 +14,7 @@ def test_vertex_cover():
 
     cnf.add_constraint(nodes, cnfgen.ConstraintType.ATMOST, 2)
     
-    result = cnf.formula.solve()
+    result = cnf.solve()
     assert not result
 
     graph = [[0,1], [0,2], [0,3], [1,2], [1,3], [2,3]]
@@ -30,8 +30,5 @@ def test_vertex_cover():
 
     cnf.add_constraint(nodes, cnfgen.ConstraintType.ATMOST, 3)
     
-    result = cnf.formula.solve()
-    print(cnf.formula.model)
+    result = cnf.solve()
     assert result
-
-

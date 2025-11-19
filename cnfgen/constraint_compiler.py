@@ -1,54 +1,75 @@
 """Base CNF compiler code."""
 
 from pysat.solvers import Solver
+from pysat.formula import Atom, Or, And, Neg
 from cnfgen.types import *
 
-class Formula:
+class ConstraintHandle:
+    """Class for storing constraints and creating new variables."""
+
     def __init__(self):
         self.num_vars = 0
+        # List of formulas that will be and'd together in the end
+        self.formulas = []
         self.solver = Solver(name='cadical195')
         self.solver.activate_atmost()
+
     def add_var(self):
         self.num_vars += 1
-        return self.num_vars
-    def add_clause(self, clause):
-        self.solver.add_clause(clause)
+        new_var = Atom(f"var-{self.num_vars}")
+        # The atom needs to be clausified so that we can access the name
+        # property which gives the integer value
+        new_var.clausify()
+        return new_var
+
+    def add_formula(self, formula):
+        """Add a formula (higher level than a clause)."""
+        self.formulas.append(formula)
+
     def solve(self):
+        # The formulas need to be clausified before they can be added to the solver
+        clauses = []
+        for formula in self.formulas:
+            formula.clausify()
+            clauses.extend(formula.clauses)
+        self.solver.append_formula(clauses)
         return self.solver.solve()
+
     @property
     def model(self):
         """Returns negative if False, positive if True."""
         return self.solver.get_model()
 
 class Bool:
-    def __init__(self, formula):
-        self.vars_ = [formula.add_var()]
-    def eval(self, formula):
-        if formula.model is None:
+    def __init__(self, handle):
+        self.var = handle.add_var()
+
+    def eval(self, handle):
+        if handle.model is None:
             raise VarEvalError("formula is unknown or unsatisfiable")
-        return formula.model[self.vars_[0] - 1]
+        return handle.model[self.var.name - 1]
 
 class Enum:
-    def __init__(self, formula, values):
+    def __init__(self, handle, values):
         self.values = values
-        self.vars_ = [formula.add_var() for _ in values]
+        self.vars_ = [handle.add_var() for _ in values]
         # For each combo of vars, only one can be true
         # At least one is true
-        formula.add_clause(self.vars_)
+        at_least_one = Or(*self.vars_)
         # At most one is true
-        clauses = set()
+        clauses = []
         for var_i in self.vars_:
             for var_j in self.vars_:
                 # TODO: Remove redundant clauses
                 if var_i == var_j:
                     continue
-                clauses.add((var_i, var_j))
-                formula.add_clause([-var_i, -var_j])
-    def eval(self, formula):
-        assert formula.model is not None
-        print(self.vars_)
+                clauses.append(Or(Neg(var_i), Neg(var_j)))
+        self.var = And(at_least_one, *clauses)
+
+    def eval(self, handle):
+        assert handle.model is not None
         for var, value in zip(self.vars_, self.values):
-            if formula.model[var - 1] > 0:
+            if handle.model[var.name - 1] > 0:
                 return value
         return None
 
@@ -56,68 +77,47 @@ class ConstraintCompiler:
     """Base CNF compiler code."""
 
     def __init__(self):
-        self.formula = Formula()
-        self.vars_ = []
-        # Auxilary vars used for constraints
-        self.aux_vars = []
+        self.handle = ConstraintHandle()
 
     def create_vars(self, num, type_, values=None):
         match type_:
             case VarType.BOOL:
                 new_vars = []
                 for i in range(num):
-                    new_vars.append(Bool(self.formula))
-                self.vars_.extend(new_vars)
+                    new_vars.append(Bool(self.handle))
                 return new_vars
             case VarType.ENUM:
                 assert values is not None
                 new_vars = []
                 for i in range(num):
-                    new_vars.append(Enum(self.formula, values))
-                self.vars_.extend(new_vars)
+                    new_vars.append(Enum(self.handle, values))
                 return new_vars
 
     def add_constraint(self, vars_: list, type_, k=None):
         assert all(type(var) == type(vars_[0]) for var in vars_), "all vars must be same type"
         match type_:
             case ConstraintType.OR:
-                clause = []
-                for var in vars_:
-                    clause.append(var.vars_[0])
-                self.formula.add_clause(clause)
-            case ConstraintType.ATMOST:
-                literals = [var.vars_[0] for var in vars_]
-                self.formula.solver.add_atmost(literals, k)
+                self.handle.add_formula(Or(*[var.var for var in vars_]))
             case ConstraintType.DIFFERENT:
                 assert all(var.values == vars_[0].values for var in vars_), "all values must be same enum type"
                 for var_i in vars_:
                     for var_j in vars_:
                         if var_i == var_j:
                             continue
-                        for intl_var_a, intl_var_b in zip(var_i.vars_, var_j.vars_):
-                            # not(A) OR not(B)
-                            self.formula.add_clause([-intl_var_a, -intl_var_b])
-            case ConstraintType.OR:
-                # Assumes we have a binary type
-                clause = []
-                for var in vars_:
-                    clause.extend(var.vars_)
-                self.formula.add_clause(clause)
+                        self.handle.add_formula(Or(Neg(var_i.var), Neg(var_j.var)))
             case ConstraintType.AND:
-                for var in vars_:
-                    for intl_var in var.vars_:
-                        self.formula.add_clause([intl_var])
+                self.handle.add_formula(Or(*[var.var for var in vars_]))
             case ConstraintType.NAND:
-                clause = []
-                for var in vars_:
-                    clause.extend(-v for v in var.vars_)
-                self.formula.add_clause(clause)
+                self.handle.add_formula(Or(*[Neg(var.var) for var in vars_]))
             case ConstraintType.ATMOST:
-                assert k is not None
-                clause = []
-                for var in vars_:
-                    clause.extend(var.vars_)
-                self.formula.add_clause([var, k], is_atmost=True)
+                # TODO
+                pass
+
+    def eval(self, var):
+        return var.eval(self.handle)
+
+    def solve(self):
+        return self.handle.solve()
 
     def output(self, fname):
         # TODO

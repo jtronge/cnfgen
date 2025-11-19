@@ -28,11 +28,8 @@ class ConstraintHandle:
 
     def solve(self):
         # The formulas need to be clausified before they can be added to the solver
-        clauses = []
         for formula in self.formulas:
-            formula.clausify()
-            clauses.extend(formula.clauses)
-        self.solver.append_formula(clauses)
+            self.solver.append_formula(c for c in formula)
         return self.solver.solve()
 
     @property
@@ -64,7 +61,7 @@ class Enum:
                 if var_i == var_j:
                     continue
                 clauses.append(Or(Neg(var_i), Neg(var_j)))
-        self.var = And(at_least_one, *clauses)
+        handle.add_formula(And(at_least_one, *clauses))
 
     def eval(self, handle):
         assert handle.model is not None
@@ -104,7 +101,9 @@ class ConstraintCompiler:
                     for var_j in vars_:
                         if var_i == var_j:
                             continue
-                        self.handle.add_formula(Or(Neg(var_i.var), Neg(var_j.var)))
+                        for intl_var_a, intl_var_b in zip(var_i.vars_, var_j.vars_):
+                            # not(A) OR not(B)
+                            self.handle.add_formula(Or(Neg(intl_var_a), Neg(intl_var_b)))
             case ConstraintType.AND:
                 self.handle.add_formula(Or(*[var.var for var in vars_]))
             case ConstraintType.NAND:

@@ -56,7 +56,7 @@ def load_graph(path):
     return nnodes, list(graph)
 
 @pytest.mark.parametrize("ncolors,graph_path,exp_result", [
-    (1, "data/G12/G12.mtx", True),
+    (1, "data/G12/G12.mtx", False),
     (2, "data/G12/G12.mtx", True),
     (3, "data/G12/G12.mtx", True),
     (4, "data/G12/G12.mtx", True),

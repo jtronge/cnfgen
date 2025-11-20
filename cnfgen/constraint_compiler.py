@@ -1,7 +1,8 @@
 """Base CNF compiler code."""
 
 from pysat.solvers import Solver
-from pysat.formula import Atom, Or, And, Neg
+from pysat.formula import PYSAT_FALSE
+from pysat.formula import Atom, Or, And, Neg, Equals, XOr
 from cnfgen.types import *
 
 class ConstraintHandle:
@@ -70,6 +71,19 @@ class Enum:
                 return value
         return None
 
+class INT:
+    def __init__(self, handle, bitwidth):
+        # add 32 variables for each bit
+        self.bitwidth = bitwidth
+        self.vars_ = [handle.add_var() for _ in range(bitwidth)]
+    def eval(self, handle):
+        assert handle.model is not None
+        res = 0
+        for i, var in enumerate(bitwidth):
+            if handle.model[var.name - 1] > 0:
+                res = res + (2 << i)
+        return res
+
 class ConstraintCompiler:
     """Base CNF compiler code."""
 
@@ -88,6 +102,12 @@ class ConstraintCompiler:
                 new_vars = []
                 for i in range(num):
                     new_vars.append(Enum(self.handle, values))
+                return new_vars
+            case VarType.INT:
+                assert type(values) is int
+                new_vars = []
+                for i in range(num):
+                    new_vars.append(INT(self.handle, values))
                 return new_vars
 
     def add_constraint(self, vars_: list, type_, k=None):
@@ -111,6 +131,49 @@ class ConstraintCompiler:
             case ConstraintType.ATMOST:
                 # TODO
                 pass
+
+            # INT contraints
+            case ConstraintType.EQ:
+                # TODO
+                # check for int type
+                biteq = []
+                for i, var_i in enumerate(vars_):
+                    for j, var_j in enumerate(vars_):
+                        if i >= j:
+                            continue
+                        for intl_var_a, intl_var_b in zip(var_i.vars_, var_j.vars_):
+                            if intl_var_a.name > intl_var_b.name:
+                                continue
+                            biteq.append(Equals(intl_var_a, intl_var_b))
+                self.handle.add_formula(And(*biteq))
+            case ConstraintType.NEQ:
+                # TODO
+                # check for int type
+                bitneq = []
+                for i, var_i in enumerate(vars_):
+                    for j, var_j in enumerate(vars_):
+                        if i >= j:
+                            continue
+                        for intl_var_a, intl_var_b in zip(var_i.vars_, var_j.vars_):
+                            if intl_var_a.name > intl_var_b.name:
+                                continue
+                            bitneq.append(Neg(Equals(intl_var_a, intl_var_b)))
+                self.handle.add_formula(Or(*bitneq))
+            case ConstraintType.SUM:
+                # TODO extend to more than 2 summands
+                # must have 3 operands
+                # enforce same bitwidth
+                assert len(vars_) == 3
+                # implement ripple carry adder
+                carry = [PYSAT_FALSE]
+                sums = []
+                
+                # c = a + b
+                for ai, bi, ci in zip(vars_[0].vars_, vars_[1].vars_, vars_[2].vars_):
+                    sums.append(Equals(ci, XOr(XOr(ai, bi), carry[-1])))
+                    carry.append(Or(And(ai, bi), And(XOr(ai, bi), carry[-1])))
+                self.handle.add_formula(And(*sums))
+
 
     def eval(self, var):
         return var.eval(self.handle)

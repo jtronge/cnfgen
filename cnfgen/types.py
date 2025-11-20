@@ -4,11 +4,17 @@
 class VarType:
     BOOL = 0
     ENUM = 1
-
+    INT = 2
 
 class ConstraintType:
-    DIFFERENT = 0
-    OR = 1
-    ATMOST = 2
-    AND = 3
-    NAND = 4
+    OR = 0
+    ATMOST = 1
+    AND = 2
+    NAND = 3
+    
+    DIFFERENT = 10
+    SAME = 11
+   
+    EQ = 20
+    NEQ = 21
+    SUM = 22

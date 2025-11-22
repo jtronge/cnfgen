@@ -129,9 +129,29 @@ class ConstraintCompiler:
             case ConstraintType.NAND:
                 self.handle.add_formula(Or(*[Neg(var.var) for var in vars_]))
             case ConstraintType.ATMOST:
-                # TODO
-                pass
-
+                assert k is not None
+                assert k <= len(vars_)
+                # Naive approach to implementing at-most-k
+                used = set()
+                # Current k variable indices
+                cur_vars = list(range(k))
+                for pos in range(k):
+                    for i in range(len(vars_)):
+                        tmp_vars = cur_vars[:]
+                        tmp_vars[pos] = i
+                        tmp_vars.sort()
+                        if tuple(tmp_vars) in used:
+                            continue
+                        used.add(tuple(tmp_vars))
+                        # If variable in this set are true, then all others must be false
+                        base_formula = Or(*[vars_[j].var for j in tmp_vars])
+                        rest = [Neg(var.var) for j, var in enumerate(vars_)
+                                if j not in tmp_vars]
+                        if rest:
+                            self.handle.add_formula(And(base_formula, And(*rest)))
+                        else:
+                            self.handle.add_formula(base_formula)
+                        cur_vars = tmp_vars
             # INT contraints
             case ConstraintType.EQ:
                 # TODO
@@ -173,7 +193,6 @@ class ConstraintCompiler:
                     sums.append(Equals(ci, XOr(XOr(ai, bi), carry[-1])))
                     carry.append(Or(And(ai, bi), And(XOr(ai, bi), carry[-1])))
                 self.handle.add_formula(And(*sums))
-
 
     def eval(self, var):
         return var.eval(self.handle)

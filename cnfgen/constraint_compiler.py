@@ -2,7 +2,7 @@
 
 from pysat.solvers import Solver
 from pysat.formula import PYSAT_FALSE
-from pysat.formula import Atom, Or, And, Neg, Equals, XOr
+from pysat.formula import Atom, Or, And, Neg, Equals, XOr, Implies
 from cnfgen.types import *
 
 class ConstraintHandle:
@@ -134,24 +134,20 @@ class ConstraintCompiler:
                 # Naive approach to implementing at-most-k
                 used = set()
                 # Current k variable indices
-                cur_vars = list(range(k))
-                for pos in range(k):
+                cur_vars = list(range(k + 1))
+                formulas = []
+                for pos in range(k + 1):
                     for i in range(len(vars_)):
                         tmp_vars = cur_vars[:]
                         tmp_vars[pos] = i
                         tmp_vars.sort()
-                        if tuple(tmp_vars) in used:
+                        if tuple(tmp_vars) in used or len(set(tmp_vars)) != (k + 1):
                             continue
                         used.add(tuple(tmp_vars))
                         # If variable in this set are true, then all others must be false
-                        base_formula = Or(*[vars_[j].var for j in tmp_vars])
-                        rest = [Neg(var.var) for j, var in enumerate(vars_)
-                                if j not in tmp_vars]
-                        if rest:
-                            self.handle.add_formula(And(base_formula, And(*rest)))
-                        else:
-                            self.handle.add_formula(base_formula)
+                        self.handle.add_formula(Neg(And(*[vars_[j].var for j in tmp_vars])))
                         cur_vars = tmp_vars
+                # self.handle.add_formula(And(Neg(var.var for var in vars_)))
             # INT contraints
             case ConstraintType.EQ:
                 # TODO

@@ -50,9 +50,27 @@ def test_intadd_commutativity(bitwidth, exp_result):
     assert result == exp_result
     print('Verified bitwidth {} in {}s'.format(bitwidth, cc.handle.solver.time()))
 
+def test_graph_coloring_simple():
+    colors = ["red", "green", "blue", "cyan"]
+    graph = [[0,1], [0,2], [0,3], [1,2], [1,3], [2,3]]
+    nnodes = 4
+
+    cnf = cnfgen.ConstraintCompiler()
+    nodes = setup_coloring_problem(cnf, nnodes, graph, colors)
+
+    cnf.output("test_graph_coloring.cnf")
+    result = cnf.solve()
+
+    colors = set(cnf.eval(node) for node in nodes)
+    print('Chosen colors:', colors)
+
 if __name__ == "__main__":
 
     print("------ graph coloring ------")
+
+    test_graph_coloring_simple()
+
+    print("------ file tests ------")
 
     test_graph_coloring_file(1, "data/G12/G12.mtx", False)
     test_graph_coloring_file(2, "data/G12/G12.mtx", True)

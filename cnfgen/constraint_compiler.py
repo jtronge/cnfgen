@@ -130,24 +130,24 @@ class ConstraintCompiler:
                 self.handle.add_formula(Or(*[Neg(var.var) for var in vars_]))
             case ConstraintType.ATMOST:
                 assert k is not None
-                assert k <= len(vars_)
-                # Naive approach to implementing at-most-k
-                used = set()
-                # Current k variable indices
-                cur_vars = list(range(k + 1))
-                formulas = []
-                for pos in range(k + 1):
-                    for i in range(len(vars_)):
-                        tmp_vars = cur_vars[:]
-                        tmp_vars[pos] = i
-                        tmp_vars.sort()
-                        if tuple(tmp_vars) in used or len(set(tmp_vars)) != (k + 1):
-                            continue
-                        used.add(tuple(tmp_vars))
-                        # If variable in this set are true, then all others must be false
-                        self.handle.add_formula(Neg(And(*[vars_[j].var for j in tmp_vars])))
-                        cur_vars = tmp_vars
-                # self.handle.add_formula(And(Neg(var.var for var in vars_)))
+                # degenerate case
+                if k < len(vars_):
+                    # Naive approach to implementing at-most-k
+                    used = set()
+                    # Current k variable indices
+                    cur_vars = list(range(k + 1))
+                    formulas = []
+                    for pos in range(k + 1):
+                        for i in range(len(vars_)):
+                            tmp_vars = cur_vars[:]
+                            tmp_vars[pos] = i
+                            tmp_vars.sort()
+                            if tuple(tmp_vars) in used or len(set(tmp_vars)) != (k + 1):
+                                continue
+                            used.add(tuple(tmp_vars))
+                            # If variable in this set are true, then all others must be false
+                            self.handle.add_formula(Neg(And(*[vars_[j].var for j in tmp_vars])))
+                            cur_vars = tmp_vars
             # INT contraints
             case ConstraintType.EQ:
                 # TODO

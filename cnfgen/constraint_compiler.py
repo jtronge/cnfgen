@@ -12,7 +12,7 @@ class ConstraintHandle:
         self.num_vars = 0
         # List of formulas that will be and'd together in the end
         self.formulas = []
-        self.solver = Solver(name='cadical195')
+        self.solver = Solver(name='cadical195', use_timer=True)
         self.solver.activate_atmost()
 
     def add_var(self):

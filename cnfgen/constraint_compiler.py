@@ -2,7 +2,7 @@
 
 from pysat.solvers import Solver
 from pysat.formula import PYSAT_FALSE
-from pysat.formula import Atom, Or, And, Neg, Equals, XOr, Implies
+from pysat.formula import Atom, Or, And, Neg, Equals, XOr, Implies, CNF
 from cnfgen.types import *
 
 class ConstraintHandle:
@@ -37,6 +37,19 @@ class ConstraintHandle:
     def model(self):
         """Returns negative if False, positive if True."""
         return self.solver.get_model()
+
+    def get_cnf(self):
+        """Get a CNF formula for the saved constraints."""
+        cnf = CNF()
+        for formula in self.formulas:
+            formula.clausify()
+            cnf.extend(formula.clauses)
+        return cnf
+
+    def save(self, fname):
+        """Save the CNF data in DIMACS format."""
+        cnf = self.get_cnf()
+        cnf.to_file(fname)
 
 class Bool:
     def __init__(self, handle):
@@ -197,5 +210,4 @@ class ConstraintCompiler:
         return self.handle.solve()
 
     def output(self, fname):
-        # TODO
-        pass
+        self.handle.save(fname)

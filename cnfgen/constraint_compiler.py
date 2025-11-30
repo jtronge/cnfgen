@@ -4,6 +4,7 @@ from pysat.solvers import Solver
 from pysat.formula import PYSAT_FALSE
 from pysat.formula import Atom, Or, And, Neg, Equals, XOr, Implies, CNF
 from cnfgen.types import *
+from cnfgen import sbva
 
 class ConstraintHandle:
     """Class for storing constraints and creating new variables."""
@@ -28,9 +29,13 @@ class ConstraintHandle:
         self.formulas.append(formula)
 
     def solve(self):
+        cnf = self.get_cnf()
+        # Apply optimizations
+        new_cnf = sbva.run_sbva(cnf)
+        self.solver.append_formula(new_cnf)
         # The formulas need to be clausified before they can be added to the solver
-        for formula in self.formulas:
-            self.solver.append_formula(c for c in formula)
+        #for formula in self.formulas:
+        #    self.solver.append_formula(c for c in formula)
         return self.solver.solve()
 
     @property
@@ -45,6 +50,10 @@ class ConstraintHandle:
             formula.clausify()
             cnf.extend(formula.clauses)
         return cnf
+
+    def sbva(self):
+        """Apply an optimization produced by SBVA."""
+        cnf = self.get_cnf()
 
     def save(self, fname):
         """Save the CNF data in DIMACS format."""

@@ -189,6 +189,14 @@ class ConstraintCompiler:
                     sums.append(Equals(ci, XOr(XOr(ai, bi), carry[-1])))
                     carry.append(Or(And(ai, bi), And(XOr(ai, bi), carry[-1])))
                 self.handle.add_formula(And(*sums))
+            case ConstraintType.LT:
+                assert len(vars_) == 2
+                # implement ripple comparator
+                carry = [PYSAT_FALSE]
+
+                for ai, bi, in zip(vars_[0].vars_, vars_[1].vars_):
+                    carry.append(Or(And(carry[-1], Implies(ai, bi)), Neg(Implies(ai, bi))))
+                self.handle.add_formula(carry[-1])
 
     def eval(self, var):
         return var.eval(self.handle)

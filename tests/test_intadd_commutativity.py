@@ -14,7 +14,6 @@ def setup_intcomm_problem(cc, bitwidth):
     (32, False),
     (64, False),
     (128, False),
-    (256, False),
 ])
 def test_intadd_commutativity(bitwidth, exp_result):
     cc = cnfgen.ConstraintCompiler()

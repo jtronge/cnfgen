@@ -3,6 +3,7 @@
 from pysat.solvers import Solver
 from pysat.formula import PYSAT_FALSE
 from pysat.formula import Atom, Or, And, Neg, Equals, XOr, Implies, CNF
+from pysat.process import Processor
 from cnfgen.types import *
 from cnfgen import sbva
 
@@ -14,6 +15,10 @@ class ConstraintHandle:
         # List of formulas that will be and'd together in the end
         self.formulas = []
         self.solver = Solver(name='Minisat22')
+        self.processor = Processor()
+        self.cnf = None
+        self.preprocessed = False
+        self.solution = None
 
     def add_var(self):
         self.num_vars += 1
@@ -28,16 +33,45 @@ class ConstraintHandle:
         self.formulas.append(formula)
 
     def solve(self):
-        cnf = self.get_cnf()
-        # Apply optimizations
-        # new_cnf = sbva.run_sbva(cnf)
-        self.solver.append_formula(cnf)
+        if self.cnf is None:
+            self.get_cnf()
+        self.solver.append_formula(self.cnf)
         return self.solver.solve()
 
     @property
     def model(self):
         """Returns negative if False, positive if True."""
-        return self.solver.get_model()
+        if not self.preprocessed:
+            return self.solver.get_model()
+        else:
+            return processor.restore(self.solver.get_model())
+        
+    def get_cnf(self):
+        """Get a CNF formula for the saved constraints."""
+        cnf = CNF()
+        for formula in self.formulas:
+            formula.clausify()
+            for clause in formula:
+                cnf.append(clause)
+        self.cnf = cnf
+        return cnf
+
+    def sbva(self):
+        """Apply an optimization produced by SBVA."""
+        cnf = self.get_cnf()
+
+    def save(self, fname):
+        """Save the CNF data in DIMACS format."""
+        cnf = self.get_cnf()
+        cnf.to_file(fname)
+
+    def preprocess(self, rounds = 1, block = False, cover = False, condition = False, 
+            decompose = True, elim = True, probe = True, probehbr = True,
+            subsume = True, vivify = True, freeze = []):
+        self.processor.append_formula(self.cnf)
+        self.processor.process(rounds, block, cover, condition, decompose, elim,
+                probe, probehbr, subsume, vivify, freeze)
+
 
     def get_cnf(self):
         """Get a CNF formula for the saved constraints."""

@@ -31,6 +31,7 @@ def test_graph_coloring_satisfiable():
     nodes = setup_coloring_problem(cnf, nnodes, graph, colors)
 
     cnf.output("test_graph_coloring.cnf")
+    cnf.handle.preprocess()
     result = cnf.solve()
 
     colors = set(cnf.eval(node) for node in nodes)

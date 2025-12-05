@@ -12,8 +12,7 @@ class ConstraintHandle:
         self.num_vars = 0
         # List of formulas that will be and'd together in the end
         self.formulas = []
-        self.solver = Solver(name='cadical195')
-        self.solver.activate_atmost()
+        self.solver = Solver(name='Minisat22')
 
     def add_var(self):
         self.num_vars += 1
@@ -46,6 +45,11 @@ class Bool:
         if handle.model is None:
             raise VarEvalError("formula is unknown or unsatisfiable")
         return handle.model[self.var.name - 1]
+    def is_assigned(self, literals):
+        if self.var.name in literals or -self.var.name in literals:
+            return True
+        else:
+            return False
 
 class Enum:
     def __init__(self, handle, values):
@@ -70,6 +74,12 @@ class Enum:
             if handle.model[var.name - 1] > 0:
                 return value
         return None
+
+    def is_assigned(self, literals):
+        for lit in self.vars_:
+            if lit.name in literals:
+                return True
+        return False
 
 class INT:
     def __init__(self, handle, bitwidth):
@@ -189,6 +199,108 @@ class ConstraintCompiler:
                     sums.append(Equals(ci, XOr(XOr(ai, bi), carry[-1])))
                     carry.append(Or(And(ai, bi), And(XOr(ai, bi), carry[-1])))
                 self.handle.add_formula(And(*sums))
+
+    def add_symmetry(self, vars_: list, type_, k=None):
+        assert all(type(var) == type(vars_[0]) for var in vars_), "all vars must be same type"
+        match type_:
+            case VarType.BOOL:
+                # assign variables and propagate until all are assigned
+                stack = []
+                tried = []
+                res, propagated = self.handle.solver.propagate(assumptions=stack)
+                if not res:
+                    return False
+
+                for idx, var in enumerate(vars_):
+                    if not var.is_assigned(propagated):
+                        tried.append([var, 0])
+                        break
+
+                while tried:
+                    var = tried[-1][0]
+                    lit_idx = tried[-1][1]
+
+                    if lit_idx >= 2:
+                        tried.pop(-1)
+                        stack.pop(-1)
+                        continue
+                    
+                    res, propagated = self.handle.solver.propagate(assumptions=stack)
+                    allassigned = False
+
+                    # find next untried assignment
+                    for i in range(lit_idx, 2):
+                        tried[-1][1] = tried[-1][1] + 1
+                        if lit_idx < 2:
+                            if lit_idx == 0:
+                                if -(var.var.name) not in propagated:
+                                    stack.append(-var.var.name)
+                            elif lit_idx == 1:
+                                if (var.var.name) not in propagated:
+                                    stack.append(var.var.name)
+
+                            res, propagated = self.handle.solver.propagate(assumptions=stack)
+                            if not res:
+                                stack.pop(-1)
+                                continue
+                            for idx, var_ in enumerate(vars_):
+                                if not var_.is_assigned(propagated):
+                                    tried.append([var_, 0])
+                                    break
+                            allassigned = True
+                            break
+                    if allassigned:
+                        for lit in stack:
+                            self.handle.solver.add_clause([lit])
+                        return True
+                return False
+
+            case VarType.ENUM:
+                # assign variables and propagate until all are assigned
+                stack = []
+                tried = []
+                res, propagated = self.handle.solver.propagate(assumptions=stack)
+                if not res:
+                    return False
+
+                for idx, var in enumerate(vars_):
+                    if not var.is_assigned(propagated):
+                        tried.append([var, 0])
+                        break
+                    
+                while tried:
+                    var = tried[-1][0]
+                    lit_idx = tried[-1][1]
+                    
+                    if lit_idx >= len(k):
+                        tried.pop(-1)
+                        stack.pop(-1)
+                        continue
+
+                    res, propagated = self.handle.solver.propagate(assumptions=stack)
+                    allassigned = False
+
+                    # find next untried assignment
+                    for i in range(lit_idx, len(k)):
+                        tried[-1][1] = tried[-1][1] + 1
+                        if -(var.vars_[i].name) not in propagated:
+                            stack.append(var.vars_[i].name)
+                            res, propagated = self.handle.solver.propagate(assumptions=stack)
+                            if not res:
+                                stack.pop(-1)
+                                continue
+                            for idx, var_ in enumerate(vars_):
+                                if not var_.is_assigned(propagated):
+                                    tried.append([var_, 0])
+                                    break
+                            allassigned = True
+                            break
+
+                    if allassigned:
+                        for lit in stack:
+                            self.handle.solver.add_clause([lit])
+                        return True
+                return False
 
     def eval(self, var):
         return var.eval(self.handle)

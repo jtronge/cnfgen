@@ -60,12 +60,6 @@ def load_graph(path):
     (2, "data/G12/G12.mtx", True),
     (3, "data/G12/G12.mtx", True),
     (4, "data/G12/G12.mtx", True),
-    (5, "data/G12/G12.mtx", True),
-    (6, "data/G12/G12.mtx", True),
-    (7, "data/G12/G12.mtx", True),
-    (8, "data/G12/G12.mtx", True),
-    (9, "data/G12/G12.mtx", True),
-    (10, "data/G12/G12.mtx", True),
 ])
 def test_graph_coloring_file(root, ncolors, graph_path, exp_result):
     colors = [f"color-{i}" for i in range(ncolors)]

@@ -18,3 +18,5 @@ class ConstraintType:
     EQ = 20
     NEQ = 21
     SUM = 22
+    BIT_AND = 23
+    LT = 24

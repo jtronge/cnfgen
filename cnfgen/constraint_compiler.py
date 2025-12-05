@@ -30,8 +30,8 @@ class ConstraintHandle:
     def solve(self):
         cnf = self.get_cnf()
         # Apply optimizations
-        new_cnf = sbva.run_sbva(cnf)
-        self.solver.append_formula(new_cnf)
+        # new_cnf = sbva.run_sbva(cnf)
+        self.solver.append_formula(cnf)
         return self.solver.solve()
 
     @property
@@ -62,8 +62,7 @@ class Bool:
         self.var = handle.add_var()
 
     def eval(self, handle):
-        if handle.model is None:
-            raise VarEvalError("formula is unknown or unsatisfiable")
+        assert handle.model is not None
         return handle.model[self.var.name - 1]
     def is_assigned(self, literals):
         if self.var.name in literals or -self.var.name in literals:

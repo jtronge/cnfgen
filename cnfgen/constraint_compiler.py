@@ -31,8 +31,9 @@ class ConstraintHandle:
     def solve(self):
         cnf = self.get_cnf()
         # Apply optimizations
-        new_cnf = sbva.run_sbva(cnf)
-        self.solver.append_formula(new_cnf)
+        #new_cnf = sbva.run_sbva(cnf)
+        #self.solver.append_formula(new_cnf)
+        self.solver.append_formula(cnf)
         # The formulas need to be clausified before they can be added to the solver
         #for formula in self.formulas:
         #    self.solver.append_formula(c for c in formula)

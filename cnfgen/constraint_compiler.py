@@ -1,9 +1,10 @@
 """Base CNF compiler code."""
 
 from pysat.solvers import Solver
-from pysat.formula import PYSAT_TRUE, PYSAT_FALSE
+from pysat.formula import PYSAT_FALSE
 from pysat.formula import Atom, Or, And, Neg, Equals, XOr, Implies, CNF
 from cnfgen.types import *
+from cnfgen import sbva
 
 class ConstraintHandle:
     """Class for storing constraints and creating new variables."""
@@ -27,15 +28,34 @@ class ConstraintHandle:
         self.formulas.append(formula)
 
     def solve(self):
-        # The formulas need to be clausified before they can be added to the solver
-        for formula in self.formulas:
-            self.solver.append_formula(c for c in formula)
+        cnf = self.get_cnf()
+        # Apply optimizations
+        new_cnf = sbva.run_sbva(cnf)
+        self.solver.append_formula(new_cnf)
         return self.solver.solve()
 
     @property
     def model(self):
         """Returns negative if False, positive if True."""
         return self.solver.get_model()
+
+    def get_cnf(self):
+        """Get a CNF formula for the saved constraints."""
+        cnf = CNF()
+        for formula in self.formulas:
+            formula.clausify()
+            for clause in formula:
+                cnf.append(clause)
+        return cnf
+
+    def sbva(self):
+        """Apply an optimization produced by SBVA."""
+        cnf = self.get_cnf()
+
+    def save(self, fname):
+        """Save the CNF data in DIMACS format."""
+        cnf = self.get_cnf()
+        cnf.to_file(fname)
 
 class Bool:
     def __init__(self, handle):
@@ -187,7 +207,6 @@ class ConstraintCompiler:
                             biteq.append(Equals(intl_var_a, intl_var_b))
                 self.handle.add_formula(And(*biteq))
             case ConstraintType.NEQ:
-                # TODO
                 # check for int type
                 bitneq = []
                 for i, var_i in enumerate(vars_):
@@ -332,5 +351,4 @@ class ConstraintCompiler:
         return self.handle.solve()
 
     def output(self, fname):
-        # TODO
-        pass
+        self.handle.save(fname)

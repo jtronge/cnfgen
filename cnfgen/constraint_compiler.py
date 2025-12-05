@@ -73,6 +73,24 @@ class ConstraintHandle:
                 probe, probehbr, subsume, vivify, freeze)
 
 
+    def get_cnf(self):
+        """Get a CNF formula for the saved constraints."""
+        cnf = CNF()
+        for formula in self.formulas:
+            formula.clausify()
+            for clause in formula:
+                cnf.append(clause)
+        return cnf
+
+    def sbva(self):
+        """Apply an optimization produced by SBVA."""
+        cnf = self.get_cnf()
+
+    def save(self, fname):
+        """Save the CNF data in DIMACS format."""
+        cnf = self.get_cnf()
+        cnf.to_file(fname)
+
 class Bool:
     def __init__(self, handle):
         self.var = handle.add_var()

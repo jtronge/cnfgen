@@ -1,8 +1,8 @@
 """Base CNF compiler code."""
 
 from pysat.solvers import Solver
-from pysat.formula import PYSAT_FALSE
-from pysat.formula import Atom, Or, And, Neg, Equals, XOr, Implies
+from pysat.formula import PYSAT_TRUE, PYSAT_FALSE
+from pysat.formula import Atom, Or, And, Neg, Equals, XOr, Implies, CNF
 from cnfgen.types import *
 
 class ConstraintHandle:
@@ -86,12 +86,21 @@ class INT:
         # add 32 variables for each bit
         self.bitwidth = bitwidth
         self.vars_ = [handle.add_var() for _ in range(bitwidth)]
+        self.forced = False
+    def assign(self, handle, value):
+        for i, var in enumerate(self.vars_):
+            bitval = (value >> i) % 2
+            if bitval == 0:
+                handle.add_formula(Neg(var))
+            else:
+                handle.add_formula(var)
+        self.forced = True
     def eval(self, handle):
         assert handle.model is not None
         res = 0
-        for i, var in enumerate(bitwidth):
+        for i, var in enumerate(self.vars_):
             if handle.model[var.name - 1] > 0:
-                res = res + (2 << i)
+                res = res + (1 << i)
         return res
 
 class ConstraintCompiler:
@@ -121,7 +130,7 @@ class ConstraintCompiler:
                 return new_vars
 
     def add_constraint(self, vars_: list, type_, k=None):
-        assert all(type(var) == type(vars_[0]) for var in vars_), "all vars must be same type"
+        #assert all(type(var) == type(vars_[0]) for var in vars_), "all vars must be same type"
         match type_:
             case ConstraintType.OR:
                 self.handle.add_formula(Or(*[var.var for var in vars_]))
@@ -159,6 +168,11 @@ class ConstraintCompiler:
                             self.handle.add_formula(Neg(And(*[vars_[j].var for j in tmp_vars])))
                             cur_vars = tmp_vars
             # INT contraints
+            case ConstraintType.BIT_AND:
+                assert len(vars_) == 3
+                bi = vars_[1].var
+                for ai, ci in zip(vars_[0].vars_, vars_[2].vars_):
+                    self.handle.add_formula(Equals(And(ai, bi), ci))
             case ConstraintType.EQ:
                 # TODO
                 # check for int type
@@ -205,7 +219,8 @@ class ConstraintCompiler:
                 carry = [PYSAT_FALSE]
 
                 for ai, bi, in zip(vars_[0].vars_, vars_[1].vars_):
-                    carry.append(Or(And(carry[-1], Implies(ai, bi)), Neg(Implies(ai, bi))))
+                    carry.append(Or(And(Neg(ai), bi), And(carry[-1], Neg(XOr(ai,bi)))))
+                print(carry[-1])
                 self.handle.add_formula(carry[-1])
 
     def add_symmetry(self, vars_: list, type_, k=None):

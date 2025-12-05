@@ -33,9 +33,6 @@ class ConstraintHandle:
         # Apply optimizations
         new_cnf = sbva.run_sbva(cnf)
         self.solver.append_formula(new_cnf)
-        # The formulas need to be clausified before they can be added to the solver
-        #for formula in self.formulas:
-        #    self.solver.append_formula(c for c in formula)
         return self.solver.solve()
 
     @property
@@ -48,7 +45,8 @@ class ConstraintHandle:
         cnf = CNF()
         for formula in self.formulas:
             formula.clausify()
-            cnf.extend(formula.clauses)
+            for clause in formula:
+                cnf.append(clause)
         return cnf
 
     def sbva(self):
@@ -185,7 +183,6 @@ class ConstraintCompiler:
                             biteq.append(Equals(intl_var_a, intl_var_b))
                 self.handle.add_formula(And(*biteq))
             case ConstraintType.NEQ:
-                # TODO
                 # check for int type
                 bitneq = []
                 for i, var_i in enumerate(vars_):
